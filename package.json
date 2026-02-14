@@ -1,0 +1,21 @@
+{
+  "name": "sprite-matic-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Monorepo for SpriteMatic SPA (frontend + backend)",
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev --workspace @spritematic/backend\" \"npm run dev --workspace @spritematic/frontend\"",
+    "dev:frontend": "npm run dev --workspace @spritematic/frontend",
+    "dev:backend": "npm run dev --workspace @spritematic/backend",
+    "build": "npm run build --workspace @spritematic/backend && npm run build --workspace @spritematic/frontend",
+    "lint": "npm run lint --workspace @spritematic/backend && npm run lint --workspace @spritematic/frontend",
+    "format": "npm run format --workspace @spritematic/backend && npm run format --workspace @spritematic/frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
