@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { apiRateLimit } from "./middleware/rate-limit.js";
 import { logger } from "./observability/logger.js";
 import { apiRouter } from "./routes/index.js";
+import { authRouter } from "./routes/auth.routes.js";
 
 export const app = express();
 app.set("etag", false);
@@ -19,10 +20,20 @@ app.use(
     crossOriginResourcePolicy: false
   })
 );
+const allowedOrigins = env.FRONTEND_ORIGIN.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: env.FRONTEND_ORIGIN,
-    credentials: true
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow non-browser clients
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    }
   })
 );
 app.use((_req, res, next) => {
@@ -60,6 +71,9 @@ app.get("/health", (_req, res) => {
     status: "ok"
   });
 });
+
+// Backward-compatible mount for clients calling "/auth/*" without the "/api" prefix
+app.use("/auth", authRouter);
 
 app.use("/api", apiRouter);
 

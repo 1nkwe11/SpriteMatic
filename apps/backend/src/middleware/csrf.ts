@@ -7,7 +7,8 @@ const csrfUtilities = doubleCsrf({
   cookieName: "sm_csrf_token",
   cookieOptions: {
     secure: isProd,
-    sameSite: "lax",
+    // Allow cross-site XHR from Vercel/production domains
+    sameSite: isProd ? "none" : "lax",
     path: "/",
     httpOnly: true
   },

@@ -7,7 +7,8 @@ export const REFRESH_COOKIE = "sm_refresh_token";
 const sharedCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: "lax",
+  // Cross-site frontend (Vercel) needs cookies on XHR; use "none" in prod, keep lax locally
+  sameSite: isProd ? "none" : "lax",
   path: "/"
 };
 
