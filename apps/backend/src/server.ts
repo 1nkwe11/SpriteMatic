@@ -6,17 +6,33 @@ import { logger, logSession } from "./observability/logger.js";
 import { startPacketCapture } from "./observability/packet-capture.js";
 import { startSpriteWorker } from "./queue/sprite.queue.js";
 import { execSync } from "child_process";
+import path from "path";
+import express from "express";
 
 const runMigrations = () => {
   try {
-    execSync("npx prisma migrate deploy", { stdio: "inherit" });
-    logger.info("prisma_migrate_deploy_ok");
+    const prismaDir = path.resolve(process.cwd(), "prisma");
+    execSync("npx prisma migrate deploy", { stdio: "inherit", cwd: prismaDir });
+    logger.info("prisma_migrate_deploy_ok", { prismaDir });
   } catch (error) {
     logger.error("prisma_migrate_deploy_failed", { error });
   }
 };
 
 runMigrations();
+
+const adminToken = process.env.ADMIN_TOKEN;
+
+if (adminToken) {
+  app.post("/api/admin/run-migrations", express.json(), (_req, res) => {
+    try {
+      runMigrations();
+      res.json({ ok: true });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: String(error) });
+    }
+  });
+}
 
 const server = app.listen(env.PORT, () => {
   logger.info("api_server_started", {
