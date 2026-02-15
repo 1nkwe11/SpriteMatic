@@ -5,6 +5,18 @@ import { redis } from "./lib/redis.js";
 import { logger, logSession } from "./observability/logger.js";
 import { startPacketCapture } from "./observability/packet-capture.js";
 import { startSpriteWorker } from "./queue/sprite.queue.js";
+import { execSync } from "child_process";
+
+const runMigrations = () => {
+  try {
+    execSync("npx prisma migrate deploy", { stdio: "inherit" });
+    logger.info("prisma_migrate_deploy_ok");
+  } catch (error) {
+    logger.error("prisma_migrate_deploy_failed", { error });
+  }
+};
+
+runMigrations();
 
 const server = app.listen(env.PORT, () => {
   logger.info("api_server_started", {
