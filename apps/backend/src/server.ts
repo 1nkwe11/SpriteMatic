@@ -7,6 +7,7 @@ import { startPacketCapture } from "./observability/packet-capture.js";
 import { startSpriteWorker } from "./queue/sprite.queue.js";
 import { execSync } from "child_process";
 import path from "path";
+import fs from "fs";
 import express from "express";
 
 const runMigrations = () => {
@@ -33,6 +34,36 @@ if (adminToken) {
     }
   });
 }
+
+const ensureSchema = async () => {
+  try {
+    const [{ regclass }] = (await prisma.$queryRawUnsafe(`SELECT to_regclass('public.\"User\"') AS regclass`)) as Array<{
+      regclass: string | null;
+    }>;
+    if (regclass) {
+      logger.info("schema_exists");
+      return;
+    }
+    const migrationsDir = path.resolve(__dirname, "../prisma/migrations");
+    const latest = fs
+      .readdirSync(migrationsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort()
+      .pop();
+    if (!latest) {
+      throw new Error("No migrations found");
+    }
+    const sqlPath = path.join(migrationsDir, latest, "migration.sql");
+    const sql = fs.readFileSync(sqlPath, "utf8");
+    await prisma.$executeRawUnsafe(sql);
+    logger.info("schema_bootstrapped", { migration: latest });
+  } catch (error) {
+    logger.error("schema_bootstrap_failed", { error });
+  }
+};
+
+await ensureSchema();
 
 const server = app.listen(env.PORT, () => {
   logger.info("api_server_started", {
